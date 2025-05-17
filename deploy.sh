@@ -1,25 +1,37 @@
 #!/bin/bash
 
-# Get the current branch name
-branch=$(git symbolic-ref --short HEAD)
+# Optional: allow passing a custom commit message
+COMMIT_MSG=${1:-"Auto-commit and deploy"}
 
-echo "🚀 Deploying branch '$branch' to 'main'..."
+# Get current branch name
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
-# Step 1: Push current branch
-git push origin "$branch"
+# Check if on main, block deployment directly from main
+if [ "$CURRENT_BRANCH" == "main" ]; then
+  echo "❌ You are on the main branch. Make changes in a feature branch."
+  exit 1
+fi
 
-# Step 2: Switch to main and pull latest
-git fetch origin
+echo "✅ Committing changes on $CURRENT_BRANCH..."
+git add .
+git commit -m "$COMMIT_MSG"
+
+echo "🚀 Pushing branch '$CURRENT_BRANCH'..."
+git push origin "$CURRENT_BRANCH"
+
+echo "🔀 Switching to main..."
 git checkout main
+
+echo "📥 Pulling latest changes from main..."
 git pull origin main
 
-# Step 3: Merge feature branch into main
-git merge "$branch"
+echo "🔁 Merging '$CURRENT_BRANCH' into main (auto message)..."
+git merge "$CURRENT_BRANCH" --no-edit
 
-# Step 4: Push main branch
+echo "📤 Pushing main..."
 git push origin main
 
-# Step 5: Switch back to original branch
-git checkout "$branch"
+echo "🔙 Switching back to '$CURRENT_BRANCH'..."
+git checkout "$CURRENT_BRANCH"
 
-echo "✅ Deployment complete."
+echo "✅ Deployment complete!"
